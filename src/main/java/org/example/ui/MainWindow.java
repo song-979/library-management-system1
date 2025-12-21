@@ -9,6 +9,8 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
+import org.example.ui.reader.ReaderBorrowWindow;
+import org.example.ui.reader.ReaderBorrowedWindow;
 import java.util.List;
 
 public class MainWindow {
@@ -39,7 +41,7 @@ public class MainWindow {
     private void createControls() {
         // 顶部按钮区
         Composite topComp = new Composite(shell, SWT.NONE);
-        topComp.setLayout(new GridLayout(3, false));
+        topComp.setLayout(new GridLayout(6, false));
         topComp.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         Button btnAdd = new Button(topComp, SWT.PUSH);
@@ -84,6 +86,35 @@ public class MainWindow {
                 }
             }
         });
+
+        Button btnReaders = new Button(topComp, SWT.PUSH);
+        btnReaders.setText("读者管理");
+        btnReaders.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                new ReaderWindow(display).open();
+            }
+        });
+
+        Button btnReaderPortal = new Button(topComp, SWT.PUSH);
+        btnReaderPortal.setText("读者借阅");
+        btnReaderPortal.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                new ReaderBorrowWindow(display, () -> refreshBookList()).open();
+            }
+        });
+
+        Button btnRefresh = new Button(topComp, SWT.PUSH);
+        btnRefresh.setText("刷新");
+        btnRefresh.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                refreshBookList();
+            }
+        });
+
+        // 已借阅入口合并到读者借阅页面
 
         // 图书列表
         table = new Table(shell, SWT.BORDER | SWT.FULL_SELECTION);

@@ -93,4 +93,34 @@ public class BookDAO {
             return false;
         }
     }
+
+    public boolean decreaseForBorrow(Connection conn, int bookId, int qty) {
+        String sql = "UPDATE books SET total_copies=total_copies-?, available_copies=available_copies-? WHERE id=? AND total_copies>=? AND available_copies>=?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, qty);
+            pstmt.setInt(2, qty);
+            pstmt.setInt(3, bookId);
+            pstmt.setInt(4, qty);
+            pstmt.setInt(5, qty);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("借阅扣减失败：" + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean increaseForReturn(Connection conn, int bookId, int qty) {
+        String sql = "UPDATE books SET total_copies=total_copies+?, available_copies=available_copies+? WHERE id=?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, qty);
+            pstmt.setInt(2, qty);
+            pstmt.setInt(3, bookId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("归还增加失败：" + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

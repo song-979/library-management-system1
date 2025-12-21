@@ -6,9 +6,9 @@ import java.sql.SQLException;
 
 public class DBConnection {
     // 你的数据库连接URL（根据实际路径修改）
-    private static final String URL = "jdbc:mysql://localhost:3306/library_management?useSSL=false&serverTimezone=UTC";
+    private static final String URL = "jdbc:mysql://localhost:3306/library_management?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
     private static final String USER = "root"; // 你的数据库用户名
-    private static final String PASSWORD = "wdff8225820"; // 你的数据库密码
+    private static final String PASSWORD = "1234"; // 你的数据库密码
 
     static {
         try {
