@@ -68,4 +68,24 @@ public class BorrowServiceImpl implements BorrowService {
             return false;
         }
     }
+
+    @Override
+    public List<BorrowRecord> getAllHistory() {
+        return borrowDAO.getAllRecords();
+    }
+
+    @Override
+    public boolean createHistory(int readerId, int bookId, int qty, String status, String borrowDate, String returnDate) {
+        return borrowDAO.insertRecordManual(readerId, bookId, qty, status, borrowDate, returnDate);
+    }
+
+    @Override
+    public boolean updateHistory(int id, int readerId, int bookId, int qty, String status, String borrowDate, String returnDate) {
+        return borrowDAO.updateRecordManual(id, readerId, bookId, qty, status, borrowDate, returnDate);
+    }
+
+    @Override
+    public boolean deleteHistory(int id) {
+        return borrowDAO.deleteRecord(id);
+    }
 }

@@ -41,7 +41,7 @@ public class MainWindow {
     private void createControls() {
         // 顶部按钮区
         Composite topComp = new Composite(shell, SWT.NONE);
-        topComp.setLayout(new GridLayout(6, false));
+        topComp.setLayout(new GridLayout(8, false));
         topComp.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         Button btnAdd = new Button(topComp, SWT.PUSH);
@@ -111,6 +111,24 @@ public class MainWindow {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 refreshBookList();
+            }
+        });
+
+        Button btnStats = new Button(topComp, SWT.PUSH);
+        btnStats.setText("统计");
+        btnStats.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                new StatisticsWindow(display).open();
+            }
+        });
+
+        Button btnHistory = new Button(topComp, SWT.PUSH);
+        btnHistory.setText("借阅历史");
+        btnHistory.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                new BorrowHistoryWindow(display).open();
             }
         });
 

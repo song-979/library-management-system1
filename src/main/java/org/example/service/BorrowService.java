@@ -8,4 +8,8 @@ public interface BorrowService {
     boolean returnBook(int readerId, int bookId, int qty);
     List<BorrowRecord> getActiveBorrows(int readerId);
     boolean returnByRecordId(int recordId);
+    List<BorrowRecord> getAllHistory();
+    boolean createHistory(int readerId, int bookId, int qty, String status, String borrowDate, String returnDate);
+    boolean updateHistory(int id, int readerId, int bookId, int qty, String status, String borrowDate, String returnDate);
+    boolean deleteHistory(int id);
 }
