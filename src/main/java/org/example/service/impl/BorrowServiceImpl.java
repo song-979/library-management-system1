@@ -3,6 +3,7 @@ package org.example.service.impl;
 import org.example.dao.BorrowDAO;
 import org.example.dao.BookDAO;
 import org.example.dao.DBConnection;
+import org.example.dao.ReaderDAO;
 import org.example.service.BorrowService;
 import org.example.model.BorrowRecord;
 
@@ -13,11 +14,16 @@ import java.util.List;
 public class BorrowServiceImpl implements BorrowService {
     private final BookDAO bookDAO = new BookDAO();
     private final BorrowDAO borrowDAO = new BorrowDAO();
+    private final ReaderDAO readerDAO = new ReaderDAO();
 
     @Override
     public boolean borrow(int readerId, int bookId, int qty) {
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
+            int current = readerDAO.sumActiveBorrowQty(readerId);
+            int max = 5;
+            try { max = readerDAO.getAllReaders().stream().filter(r -> r.getId() == readerId).findFirst().map(r -> r.getMaxBorrow()).orElse(5); } catch (Exception ignore) {}
+            if (current + qty > max) { conn.rollback(); return false; }
             boolean ok = bookDAO.decreaseForBorrow(conn, bookId, qty);
             if (!ok) { conn.rollback(); return false; }
             ok = borrowDAO.insertBorrow(conn, readerId, bookId, qty);

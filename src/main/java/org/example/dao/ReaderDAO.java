@@ -89,4 +89,19 @@ public class ReaderDAO {
             return false;
         }
     }
+
+    public int sumActiveBorrowQty(int readerId) {
+        String sql = "SELECT COALESCE(SUM(quantity),0) qty FROM borrow_records WHERE reader_id=? AND status='borrowed'";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, readerId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return rs.getInt("qty");
+            }
+        } catch (SQLException e) {
+            System.err.println("计算读者借阅数量失败：" + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
 }

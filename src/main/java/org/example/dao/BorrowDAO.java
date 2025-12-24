@@ -111,6 +111,28 @@ public class BorrowDAO {
         return list;
     }
 
+    public List<BorrowRecord> getRecordsFiltered(Integer readerId, String fromTime, String toTime, String status) {
+        StringBuilder sb = new StringBuilder("SELECT br.id, br.reader_id, br.book_id, br.quantity, br.status, br.borrow_date, br.return_date, b.title FROM borrow_records br JOIN books b ON br.book_id=b.id WHERE 1=1");
+        java.util.List<Object> params = new java.util.ArrayList<>();
+        if (readerId != null) { sb.append(" AND br.reader_id=?"); params.add(readerId); }
+        if (status != null && !status.isEmpty()) { sb.append(" AND br.status=?"); params.add(status); }
+        if (fromTime != null && !fromTime.isEmpty()) { sb.append(" AND COALESCE(br.borrow_date, br.return_date) >= ?"); params.add(fromTime); }
+        if (toTime != null && !toTime.isEmpty()) { sb.append(" AND COALESCE(br.borrow_date, br.return_date) <= ?"); params.add(toTime); }
+        sb.append(" ORDER BY COALESCE(br.borrow_date, br.return_date) DESC, br.id DESC");
+        java.util.List<BorrowRecord> list = new java.util.ArrayList<>();
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+            for (int i = 0; i < params.size(); i++) ps.setObject(i + 1, params.get(i));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new BorrowRecord(
+                            rs.getInt("id"), rs.getInt("reader_id"), rs.getInt("book_id"), rs.getInt("quantity"), rs.getString("status"), rs.getString("borrow_date"), rs.getString("return_date"), rs.getString("title")
+                    ));
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
     public boolean insertRecordManual(int readerId, int bookId, int qty, String status, String borrowDate, String returnDate) {
         String sql = "INSERT INTO borrow_records (reader_id, book_id, quantity, status, borrow_date, return_date) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
