@@ -85,4 +85,76 @@ public class BorrowDAO {
             return false;
         }
     }
+
+    public List<BorrowRecord> getAllRecords() {
+        String sql = "SELECT br.id, br.reader_id, br.book_id, br.quantity, br.status, br.borrow_date, br.return_date, b.title " +
+                "FROM borrow_records br JOIN books b ON br.book_id=b.id ORDER BY COALESCE(br.borrow_date, br.return_date) DESC, br.id DESC";
+        List<BorrowRecord> list = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                list.add(new BorrowRecord(
+                        rs.getInt("id"),
+                        rs.getInt("reader_id"),
+                        rs.getInt("book_id"),
+                        rs.getInt("quantity"),
+                        rs.getString("status"),
+                        rs.getString("borrow_date"),
+                        rs.getString("return_date"),
+                        rs.getString("title")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public boolean insertRecordManual(int readerId, int bookId, int qty, String status, String borrowDate, String returnDate) {
+        String sql = "INSERT INTO borrow_records (reader_id, book_id, quantity, status, borrow_date, return_date) VALUES (?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, readerId);
+            pstmt.setInt(2, bookId);
+            pstmt.setInt(3, qty);
+            pstmt.setString(4, status);
+            pstmt.setString(5, borrowDate);
+            pstmt.setString(6, returnDate);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateRecordManual(int id, int readerId, int bookId, int qty, String status, String borrowDate, String returnDate) {
+        String sql = "UPDATE borrow_records SET reader_id=?, book_id=?, quantity=?, status=?, borrow_date=?, return_date=? WHERE id=?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, readerId);
+            pstmt.setInt(2, bookId);
+            pstmt.setInt(3, qty);
+            pstmt.setString(4, status);
+            pstmt.setString(5, borrowDate);
+            pstmt.setString(6, returnDate);
+            pstmt.setInt(7, id);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean deleteRecord(int id) {
+        String sql = "DELETE FROM borrow_records WHERE id=?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, id);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
