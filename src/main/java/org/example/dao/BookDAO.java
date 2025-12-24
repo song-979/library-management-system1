@@ -95,13 +95,11 @@ public class BookDAO {
     }
 
     public boolean decreaseForBorrow(Connection conn, int bookId, int qty) {
-        String sql = "UPDATE books SET total_copies=total_copies-?, available_copies=available_copies-? WHERE id=? AND total_copies>=? AND available_copies>=?";
+        String sql = "UPDATE books SET available_copies=available_copies-? WHERE id=? AND available_copies>=?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, qty);
-            pstmt.setInt(2, qty);
-            pstmt.setInt(3, bookId);
-            pstmt.setInt(4, qty);
-            pstmt.setInt(5, qty);
+            pstmt.setInt(2, bookId);
+            pstmt.setInt(3, qty);
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("借阅扣减失败：" + e.getMessage());
@@ -111,16 +109,52 @@ public class BookDAO {
     }
 
     public boolean increaseForReturn(Connection conn, int bookId, int qty) {
-        String sql = "UPDATE books SET total_copies=total_copies+?, available_copies=available_copies+? WHERE id=?";
+        String sql = "UPDATE books SET available_copies=available_copies+? WHERE id=? AND available_copies+?<=total_copies";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, qty);
-            pstmt.setInt(2, qty);
-            pstmt.setInt(3, bookId);
+            pstmt.setInt(2, bookId);
+            pstmt.setInt(3, qty);
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("归还增加失败：" + e.getMessage());
             e.printStackTrace();
             return false;
         }
+    }
+
+    public List<Book> searchBooks(String keyword, String category, Integer minAvailable) {
+        List<Book> books = new ArrayList<>();
+        StringBuilder sb = new StringBuilder("SELECT id, title, category, total_copies, available_copies, remarks, created_time, updated_time FROM books WHERE 1=1");
+        java.util.List<Object> params = new java.util.ArrayList<>();
+        if (keyword != null && !keyword.isEmpty()) { sb.append(" AND title LIKE ?"); params.add("%" + keyword + "%"); }
+        if (category != null && !category.isEmpty()) { sb.append(" AND category = ?"); params.add(category); }
+        if (minAvailable != null) { sb.append(" AND available_copies >= ?"); params.add(minAvailable); }
+        sb.append(" ORDER BY updated_time DESC");
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
+            for (int i = 0; i < params.size(); i++) pstmt.setObject(i + 1, params.get(i));
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    books.add(new Book(
+                            rs.getInt("id"), rs.getString("title"), rs.getString("category"), rs.getInt("total_copies"), rs.getInt("available_copies"), rs.getString("remarks"), rs.getString("created_time"), rs.getString("updated_time")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("搜索图书失败：" + e.getMessage());
+            e.printStackTrace();
+        }
+        return books;
+    }
+
+    public List<String> getCategories() {
+        List<String> list = new ArrayList<>();
+        String sql = "SELECT DISTINCT category FROM books ORDER BY category";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) list.add(rs.getString(1));
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
     }
 }

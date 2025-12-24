@@ -18,6 +18,9 @@ public class MainWindow {
     private final Shell shell;
     private final BookService bookService = new BookServiceImpl();
     private Table table;
+    private Text txtSearch;
+    private Combo cmbCategory;
+    private Text txtMinAvail;
 
     public MainWindow(Display display) {
         this.display = display;
@@ -41,7 +44,7 @@ public class MainWindow {
     private void createControls() {
         // 顶部按钮区
         Composite topComp = new Composite(shell, SWT.NONE);
-        topComp.setLayout(new GridLayout(8, false));
+        topComp.setLayout(new GridLayout(12, false));
         topComp.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         Button btnAdd = new Button(topComp, SWT.PUSH);
@@ -87,6 +90,22 @@ public class MainWindow {
             }
         });
 
+        new Label(topComp, SWT.NONE).setText("书名");
+        txtSearch = new Text(topComp, SWT.BORDER); txtSearch.setLayoutData(new GridData(120, SWT.DEFAULT));
+        new Label(topComp, SWT.NONE).setText("分类");
+        cmbCategory = new Combo(topComp, SWT.DROP_DOWN | SWT.READ_ONLY); cmbCategory.setLayoutData(new GridData(120, SWT.DEFAULT));
+        try { java.util.List<String> cats = new org.example.dao.BookDAO().getCategories(); cmbCategory.setItems(cats.toArray(new String[0])); } catch (Exception ignore) {}
+        new Label(topComp, SWT.NONE).setText("可借≥");
+        txtMinAvail = new Text(topComp, SWT.BORDER); txtMinAvail.setLayoutData(new GridData(60, SWT.DEFAULT));
+
+        Button btnSearch = new Button(topComp, SWT.PUSH);
+        btnSearch.setText("查询");
+        btnSearch.addSelectionListener(new SelectionAdapter() { @Override public void widgetSelected(SelectionEvent e) { refreshBookList(); } });
+
+        Button btnExport = new Button(topComp, SWT.PUSH);
+        btnExport.setText("导出CSV");
+        btnExport.addSelectionListener(new SelectionAdapter() { @Override public void widgetSelected(SelectionEvent e) { exportBooksCsv(); } });
+
         Button btnRefresh = new Button(topComp, SWT.PUSH);
         btnRefresh.setText("刷新");
         btnRefresh.addSelectionListener(new SelectionAdapter() {
@@ -120,7 +139,10 @@ public class MainWindow {
 
     private void refreshBookList() {
         table.removeAll();
-        List<Book> books = bookService.getAllBooks();
+        String kw = txtSearch == null ? null : txtSearch.getText().trim();
+        String cat = cmbCategory == null ? null : (cmbCategory.getSelectionIndex() >= 0 ? cmbCategory.getText() : null);
+        Integer minA = null; try { if (txtMinAvail != null && !txtMinAvail.getText().trim().isEmpty()) minA = Integer.parseInt(txtMinAvail.getText().trim()); } catch (Exception ignore) {}
+        List<Book> books = (kw != null || cat != null || minA != null) ? new org.example.dao.BookDAO().searchBooks(kw, cat, minA) : bookService.getAllBooks();
         for (Book book : books) {
             TableItem item = new TableItem(table, SWT.NONE);
             item.setText(new String[]{
@@ -134,9 +156,37 @@ public class MainWindow {
                     book.getUpdatedTime()
             });
             item.setData(book);
+            if (book.getAvailableCopies() == 0) item.setBackground(display.getSystemColor(SWT.COLOR_RED));
         }
         table.notifyListeners(SWT.Resize, new Event());
     }
+
+    private void exportBooksCsv() {
+        FileDialog fd = new FileDialog(shell, SWT.SAVE);
+        fd.setFilterExtensions(new String[]{"*.csv"});
+        fd.setFileName("books.csv");
+        String path = fd.open();
+        if (path == null) return;
+        StringBuilder sb = new StringBuilder();
+        TableColumn[] cols = table.getColumns();
+        for (int i = 0; i < cols.length; i++) { sb.append(csv(cols[i].getText())); if (i < cols.length - 1) sb.append(","); }
+        sb.append("\r\n");
+        for (TableItem it : table.getItems()) {
+            for (int i = 0; i < cols.length; i++) { sb.append(csv(it.getText(i))); if (i < cols.length - 1) sb.append(","); }
+            sb.append("\r\n");
+        }
+        try {
+            java.io.OutputStream os = java.nio.file.Files.newOutputStream(java.nio.file.Paths.get(path));
+            os.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
+            java.io.OutputStreamWriter w = new java.io.OutputStreamWriter(os, java.nio.charset.StandardCharsets.UTF_8);
+            w.write(sb.toString());
+            w.flush();
+            w.close();
+            showMsg("已导出: " + path);
+        } catch (Exception ex) { showMsg("导出失败"); }
+    }
+
+    private String csv(String s) { if (s == null) return "\"\""; String t = s.replace("\"","\"\""); return "\"" + t + "\""; }
 
     private void openBookDialog(Book bookToEdit) {
         Shell dialog = new Shell(shell, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);

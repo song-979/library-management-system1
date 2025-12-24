@@ -17,6 +17,10 @@ public class BorrowHistoryWindow {
     private final Shell shell;
     private final BorrowService borrowService = new BorrowServiceImpl();
     private Table table;
+    private Text tFilterReader;
+    private Text tFrom;
+    private Text tTo;
+    private Combo cmbFilterStatus;
 
     public BorrowHistoryWindow(Display display) {
         this.display = display;
@@ -37,7 +41,7 @@ public class BorrowHistoryWindow {
 
     private void createControls() {
         Composite top = new Composite(shell, SWT.NONE);
-        top.setLayout(new GridLayout(5, false));
+        top.setLayout(new GridLayout(10, false));
         top.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         Button btnAdd = new Button(top, SWT.PUSH);
@@ -65,6 +69,21 @@ public class BorrowHistoryWindow {
             }
         });
 
+        new Label(top, SWT.NONE).setText("读者ID");
+        tFilterReader = new Text(top, SWT.BORDER); tFilterReader.setLayoutData(new GridData(80, SWT.DEFAULT));
+        new Label(top, SWT.NONE).setText("状态");
+        cmbFilterStatus = new Combo(top, SWT.DROP_DOWN | SWT.READ_ONLY); cmbFilterStatus.setItems(new String[]{"","borrowed","returned"}); cmbFilterStatus.select(0);
+        new Label(top, SWT.NONE).setText("起始时间");
+        tFrom = new Text(top, SWT.BORDER); tFrom.setLayoutData(new GridData(160, SWT.DEFAULT));
+        new Label(top, SWT.NONE).setText("结束时间");
+        tTo = new Text(top, SWT.BORDER); tTo.setLayoutData(new GridData(160, SWT.DEFAULT));
+
+        Button btnFilter = new Button(top, SWT.PUSH); btnFilter.setText("筛选");
+        btnFilter.addSelectionListener(new SelectionAdapter() { @Override public void widgetSelected(SelectionEvent e) { refresh(); } });
+
+        Button btnExport = new Button(top, SWT.PUSH); btnExport.setText("导出CSV");
+        btnExport.addSelectionListener(new SelectionAdapter() { @Override public void widgetSelected(SelectionEvent e) { exportCsv(); } });
+
         Button btnRefresh = new Button(top, SWT.PUSH);
         btnRefresh.setText("刷新");
         btnRefresh.addSelectionListener(new SelectionAdapter() { @Override public void widgetSelected(SelectionEvent e) { refresh(); } });
@@ -81,13 +100,26 @@ public class BorrowHistoryWindow {
 
     private void refresh() {
         table.removeAll();
-        List<BorrowRecord> list = borrowService.getAllHistory();
+        Integer readerId = null; try { String s = tFilterReader == null ? null : tFilterReader.getText().trim(); if (s != null && !s.isEmpty()) readerId = Integer.parseInt(s); } catch (Exception ignore) {}
+        String status = cmbFilterStatus == null ? null : cmbFilterStatus.getText(); if (status != null && status.isEmpty()) status = null;
+        String from = tFrom == null ? null : tFrom.getText().trim(); if (from != null && from.isEmpty()) from = null;
+        String to = tTo == null ? null : tTo.getText().trim(); if (to != null && to.isEmpty()) to = null;
+        List<BorrowRecord> list = (readerId != null || status != null || from != null || to != null)
+                ? new org.example.dao.BorrowDAO().getRecordsFiltered(readerId, from, to, status)
+                : borrowService.getAllHistory();
         for (BorrowRecord r : list) {
             TableItem it = new TableItem(table, SWT.NONE);
             it.setText(new String[]{ String.valueOf(r.getId()), String.valueOf(r.getReaderId()), r.getBookTitle(), String.valueOf(r.getQuantity()), r.getStatus(), r.getBorrowDate(), r.getReturnDate() });
             it.setData(r);
         }
         table.notifyListeners(SWT.Resize, new Event());
+    }
+
+    private void exportCsv() {
+        FileDialog fd = new FileDialog(shell, SWT.SAVE); fd.setFilterExtensions(new String[]{"*.csv"}); fd.setFileName("borrow_history.csv"); String path = fd.open(); if (path == null) return;
+        StringBuilder sb = new StringBuilder(); TableColumn[] cols = table.getColumns(); for (int i=0;i<cols.length;i++){ sb.append(csv(cols[i].getText())); if(i<cols.length-1) sb.append(","); } sb.append("\r\n");
+        for (TableItem it : table.getItems()) { for (int i=0;i<cols.length;i++){ sb.append(csv(it.getText(i))); if(i<cols.length-1) sb.append(","); } sb.append("\r\n"); }
+        try { java.io.OutputStream os = java.nio.file.Files.newOutputStream(java.nio.file.Paths.get(path)); os.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF}); java.io.OutputStreamWriter w = new java.io.OutputStreamWriter(os, java.nio.charset.StandardCharsets.UTF_8); w.write(sb.toString()); w.flush(); w.close(); showMsg("已导出: "+path);} catch (Exception ex){ showMsg("导出失败"); }
     }
 
     private void openEditDialog(BorrowRecord record) {
@@ -148,4 +180,5 @@ public class BorrowHistoryWindow {
     }
 
     private void showMsg(String m) { MessageBox mb = new MessageBox(shell, SWT.ICON_INFORMATION); mb.setMessage(m); mb.open(); }
+    private String csv(String s){ if(s==null) return "\"\""; String t=s.replace("\"","\"\""); return "\""+t+"\""; }
 }
