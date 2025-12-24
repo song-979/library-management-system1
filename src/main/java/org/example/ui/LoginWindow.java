@@ -112,7 +112,7 @@ public class LoginWindow {
                 String password = txtPassword.getText().trim();
                 if (adminService.login(username, password)) {
                     shell.dispose();
-                    new MainWindow(display).open();
+                    new MenuWindow(display).open();
                 } else {
                     MessageBox mb = new MessageBox(shell, SWT.ICON_ERROR);
                     mb.setMessage("用户名或密码错误！");

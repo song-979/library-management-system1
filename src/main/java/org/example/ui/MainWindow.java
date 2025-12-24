@@ -87,24 +87,6 @@ public class MainWindow {
             }
         });
 
-        Button btnReaders = new Button(topComp, SWT.PUSH);
-        btnReaders.setText("读者管理");
-        btnReaders.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                new ReaderWindow(display).open();
-            }
-        });
-
-        Button btnReaderPortal = new Button(topComp, SWT.PUSH);
-        btnReaderPortal.setText("读者借阅");
-        btnReaderPortal.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                new ReaderBorrowWindow(display, () -> refreshBookList()).open();
-            }
-        });
-
         Button btnRefresh = new Button(topComp, SWT.PUSH);
         btnRefresh.setText("刷新");
         btnRefresh.addSelectionListener(new SelectionAdapter() {
@@ -114,26 +96,8 @@ public class MainWindow {
             }
         });
 
-        Button btnStats = new Button(topComp, SWT.PUSH);
-        btnStats.setText("统计");
-        btnStats.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                new StatisticsWindow(display).open();
-            }
-        });
-
-        Button btnHistory = new Button(topComp, SWT.PUSH);
-        btnHistory.setText("借阅历史");
-        btnHistory.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                new BorrowHistoryWindow(display).open();
-            }
-        });
-
-        // 已借阅入口合并到读者借阅页面
-
+        // 导航按钮已移动到主目录界面 (MenuWindow)
+        
         // 图书列表
         table = new Table(shell, SWT.BORDER | SWT.FULL_SELECTION);
         table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
