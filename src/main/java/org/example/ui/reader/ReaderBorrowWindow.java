@@ -84,14 +84,14 @@ public class ReaderBorrowWindow {
                     Book b = (Book) sel[0].getData();
                     int qty = spQty.getSelection();
                     int readerId = readers.get(cmbReader.getSelectionIndex()).getId();
-                    boolean ok = borrowService.borrow(readerId, b.getId(), qty);
-                    if (ok) {
+                    String error = borrowService.borrow(readerId, b.getId(), qty);
+                    if (error == null) {
                         showMsg("借阅成功");
                         if (onRefreshMain != null) onRefreshMain.run();
                         shell.dispose();
                         new ReaderBorrowedWindow(display, readerId, onRefreshMain).open();
                     } else {
-                        showMsg("借阅失败");
+                        showMsg("借阅失败: " + error);
                         refreshBooks();
                     }
                 } else {

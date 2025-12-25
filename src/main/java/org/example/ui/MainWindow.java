@@ -94,7 +94,14 @@ public class MainWindow {
         txtSearch = new Text(topComp, SWT.BORDER); txtSearch.setLayoutData(new GridData(120, SWT.DEFAULT));
         new Label(topComp, SWT.NONE).setText("分类");
         cmbCategory = new Combo(topComp, SWT.DROP_DOWN | SWT.READ_ONLY); cmbCategory.setLayoutData(new GridData(120, SWT.DEFAULT));
-        try { java.util.List<String> cats = new org.example.dao.BookDAO().getCategories(); cmbCategory.setItems(cats.toArray(new String[0])); } catch (Exception ignore) {}
+        loadCategories();
+        cmbCategory.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                refreshBookList();
+            }
+        });
+
         new Label(topComp, SWT.NONE).setText("可借≥");
         txtMinAvail = new Text(topComp, SWT.BORDER); txtMinAvail.setLayoutData(new GridData(60, SWT.DEFAULT));
 
@@ -138,11 +145,26 @@ public class MainWindow {
     }
 
     private void refreshBookList() {
+        // 保存当前选中的分类
+        String currentCat = cmbCategory.getText();
+        loadCategories();
+        // 尝试恢复选中
+        if (currentCat != null && !currentCat.isEmpty()) {
+            for (int i = 0; i < cmbCategory.getItemCount(); i++) {
+                if (cmbCategory.getItem(i).equals(currentCat)) {
+                    cmbCategory.select(i);
+                    break;
+                }
+            }
+        }
+        if (cmbCategory.getSelectionIndex() < 0) cmbCategory.select(0); // 默认选中"全部"
+
         table.removeAll();
         String kw = txtSearch == null ? null : txtSearch.getText().trim();
-        String cat = cmbCategory == null ? null : (cmbCategory.getSelectionIndex() >= 0 ? cmbCategory.getText() : null);
+        String cat = cmbCategory == null ? null : (cmbCategory.getSelectionIndex() > 0 ? cmbCategory.getText() : null); // index 0 is "全部", so ignore it
         Integer minA = null; try { if (txtMinAvail != null && !txtMinAvail.getText().trim().isEmpty()) minA = Integer.parseInt(txtMinAvail.getText().trim()); } catch (Exception ignore) {}
-        List<Book> books = (kw != null || cat != null || minA != null) ? new org.example.dao.BookDAO().searchBooks(kw, cat, minA) : bookService.getAllBooks();
+        
+        List<Book> books = bookService.searchBooks(kw, cat, minA);
         for (Book book : books) {
             TableItem item = new TableItem(table, SWT.NONE);
             item.setText(new String[]{
@@ -159,6 +181,20 @@ public class MainWindow {
             if (book.getAvailableCopies() == 0) item.setBackground(display.getSystemColor(SWT.COLOR_RED));
         }
         table.notifyListeners(SWT.Resize, new Event());
+    }
+
+    private void loadCategories() {
+        cmbCategory.removeAll();
+        cmbCategory.add("全部");
+        try {
+            List<String> cats = bookService.getCategories();
+            for (String c : cats) {
+                if (c != null && !c.trim().isEmpty()) {
+                    cmbCategory.add(c);
+                }
+            }
+        } catch (Exception ignore) {}
+        if (cmbCategory.getItemCount() > 0) cmbCategory.select(0);
     }
 
     private void exportBooksCsv() {

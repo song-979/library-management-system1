@@ -9,6 +9,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 import org.example.ui.reader.ReaderBorrowWindow;
+import org.example.ui.ReaderWindow;
 
 public class MenuWindow {
     private final Display display;
@@ -59,7 +60,7 @@ public class MenuWindow {
 
         createMenuButton(container, "图书管理", () -> new MainWindow(display).open());
         createMenuButton(container, "读者管理", () -> new ReaderWindow(display).open());
-        createMenuButton(container, "读者借阅", () -> new ReaderBorrowWindow(display, null).open());
+        createMenuButton(container, "读者借阅", () -> new ReaderBorrowWindow(display).open());
         createMenuButton(container, "借阅历史", () -> new BorrowHistoryWindow(display).open());
         createMenuButton(container, "数据统计", () -> new StatisticsWindow(display).open());
         

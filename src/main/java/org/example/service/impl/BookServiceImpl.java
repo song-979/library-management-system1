@@ -27,4 +27,14 @@ public class BookServiceImpl implements BookService {
     public boolean deleteBook(int bookId) {
         return bookDAO.deleteBook(bookId);
     }
+
+    @Override
+    public List<String> getCategories() {
+        return bookDAO.getCategories();
+    }
+
+    @Override
+    public List<Book> searchBooks(String keyword, String category, Integer minAvailable) {
+        return bookDAO.searchBooks(keyword, category, minAvailable);
+    }
 }

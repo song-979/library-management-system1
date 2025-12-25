@@ -8,4 +8,6 @@ public interface BookService {
     boolean addBook(Book book);
     boolean updateBook(Book book);
     boolean deleteBook(int bookId);
+    List<String> getCategories();
+    List<Book> searchBooks(String keyword, String category, Integer minAvailable);
 }

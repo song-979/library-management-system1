@@ -17,22 +17,31 @@ public class BorrowServiceImpl implements BorrowService {
     private final ReaderDAO readerDAO = new ReaderDAO();
 
     @Override
-    public boolean borrow(int readerId, int bookId, int qty) {
+    public String borrow(int readerId, int bookId, int qty) {
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             int current = readerDAO.sumActiveBorrowQty(readerId);
             int max = 5;
             try { max = readerDAO.getAllReaders().stream().filter(r -> r.getId() == readerId).findFirst().map(r -> r.getMaxBorrow()).orElse(5); } catch (Exception ignore) {}
-            if (current + qty > max) { conn.rollback(); return false; }
+            if (current + qty > max) { 
+                conn.rollback(); 
+                return "超过最大借阅数量 (当前已借: " + current + ", 本次借: " + qty + ", 限额: " + max + ")"; 
+            }
             boolean ok = bookDAO.decreaseForBorrow(conn, bookId, qty);
-            if (!ok) { conn.rollback(); return false; }
+            if (!ok) { 
+                conn.rollback(); 
+                return "库存不足或图书不存在"; 
+            }
             ok = borrowDAO.insertBorrow(conn, readerId, bookId, qty);
-            if (!ok) { conn.rollback(); return false; }
+            if (!ok) { 
+                conn.rollback(); 
+                return "系统错误：无法创建借阅记录"; 
+            }
             conn.commit();
-            return true;
+            return null; // success
         } catch (SQLException e) {
             e.printStackTrace();
-            return false;
+            return "数据库异常: " + e.getMessage();
         }
     }
 
